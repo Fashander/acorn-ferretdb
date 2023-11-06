@@ -1,0 +1,31 @@
+services: postgres: {
+    image: "ghcr.io/acorn-io/postgres:v15.#-#"
+}
+
+containers: {
+  app: {
+    build: context: "."
+    ports: publish: "8000/http"
+    env: {
+      DB_URI: "mongodb://@{service.postgres.secrets.admin.username}:@{service.postgres.secrets.admin.password}@ferretdb/ferretdb?authMechanism=PLAIN"
+      DB_NAME: "ferretdb"
+    }
+    dependsOn: [
+      "ferretdb"
+    ]
+    if args.dev {
+    files: {
+      "/src": "./"
+    },
+    env: FLASK_DEBUG: "1"
+  }
+  }
+  ferretdb: {
+    image: "ferretdb/ferretdb"
+    ports: publish: "27017/tcp"
+    consumes: ["postgres"]
+    env: {
+      FERRETDB_POSTGRESQL_URL: "postgres://@{service.postgres.secrets.admin.username}:@{service.postgres.secrets.admin.password}@@{service.postgres.address}"
+    }
+  }
+}
